@@ -42,15 +42,16 @@ pub struct Thumbnail {
 impl Thumbnail {
     /// Writes the bytes of the image in a png format
     pub fn write_png<W: Write>(self, writer: &mut W) -> ThumbResult<()> {
-        self.inner.write_to(writer, ImageOutputFormat::Png)?;
+        let image = DynamicImage::ImageRgba8(self.inner.into_rgba8());
+        image.write_to(writer, ImageOutputFormat::Png)?;
 
         Ok(())
     }
 
     /// Writes the bytes of the image in a jpeg format
     pub fn write_jpeg<W: Write>(self, writer: &mut W, compression: u8) -> ThumbResult<()> {
-        self.inner
-            .write_to(writer, ImageOutputFormat::Jpeg(compression))?;
+        let image = DynamicImage::ImageRgb8(self.inner.into_rgb8());
+        image.write_to(writer, ImageOutputFormat::Jpeg(compression))?;
 
         Ok(())
     }
