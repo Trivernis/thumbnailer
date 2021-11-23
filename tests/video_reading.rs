@@ -8,7 +8,7 @@ const VIDEO_BYTES: &'static [u8] = include_bytes!("assets/test.mp4");
 #[test]
 fn it_creates_thumbnails_for_mp4() {
     let reader = Cursor::new(VIDEO_BYTES);
-    create_thumbnails(
+    let result = create_thumbnails(
         reader,
         Mime::from_str("video/mp4").unwrap(),
         [
@@ -16,6 +16,10 @@ fn it_creates_thumbnails_for_mp4() {
             ThumbnailSize::Medium,
             ThumbnailSize::Large,
         ],
-    )
-    .unwrap();
+    );
+    #[cfg(feature = "ffmpeg")]
+    result.unwrap();
+
+    #[cfg(not(feature = "ffmpeg"))]
+    assert!(result.is_err())
 }
