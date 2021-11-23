@@ -1,4 +1,5 @@
 use crate::error::{ThumbError, ThumbResult};
+use ffmpeg_next::codec::decoder::Video as VideoDecoder;
 use ffmpeg_next::filter;
 use ffmpeg_next::filter::Graph;
 use ffmpeg_next::frame::Video;
@@ -37,6 +38,37 @@ fn extract_frame_from_video(path: &PathBuf) -> ThumbResult<DynamicImage> {
     let mut decoder = stream.codec().decoder().video()?;
     decoder.set_threading(Config::count(1));
 
+    let mut filter = get_format_filter(&mut decoder)?;
+
+    let stream_index = stream.index();
+
+    let packets = input
+        .packets()
+        .filter(|(s, _)| s.index() == stream_index)
+        .map(|(_, p)| p);
+
+    let mut frame = Video::empty();
+    let mut output_frame = Video::empty();
+    let mut count = 0;
+
+    for packet in packets {
+        decoder.send_packet(&packet)?;
+        while let Err(ffmpeg_next::Error::DecoderNotFound) = decoder.receive_frame(&mut frame) {}
+
+        if decode_single_frame(&mut filter, &mut frame, &mut output_frame).is_ok() {
+            count += 1;
+        }
+        if count > 2 {
+            // take the second frame because the first one often is just blank
+            break;
+        }
+    }
+    decoder.send_eof()?;
+
+    convert_frame_to_image(&decoder, output_frame)
+}
+
+fn get_format_filter(decoder: &mut VideoDecoder) -> ThumbResult<Graph> {
     let args = format!(
         "width={w}:height={h}:video_size={w}x{h}:pix_fmt={fmt}:time_base={base}",
         w = decoder.width(),
@@ -65,39 +97,7 @@ fn extract_frame_from_video(path: &PathBuf) -> ThumbResult<DynamicImage> {
         .parse("format=rgba")?;
     filter.validate()?;
 
-    let stream_index = stream.index();
-
-    let packets = input
-        .packets()
-        .filter(|(s, _)| s.index() == stream_index)
-        .map(|(_, p)| p);
-
-    let mut frame = Video::empty();
-    let mut output_frame = Video::empty();
-    let mut count = 0;
-
-    for packet in packets {
-        decoder.send_packet(&packet)?;
-        while let Err(ffmpeg_next::Error::DecoderNotFound) = decoder.receive_frame(&mut frame) {}
-
-        if decode_single_frame(&mut filter, &mut frame, &mut output_frame).is_ok() {
-            count += 1;
-        }
-        if count > 2 {
-            // take the second frame because the first one often is just blank
-            break;
-        }
-    }
-    decoder.send_eof()?;
-    let image = RgbaImage::from_raw(
-        decoder.width(),
-        decoder.height(),
-        output_frame.data(0).to_vec(),
-    )
-    .ok_or_else(|| ThumbError::NullVideo)?;
-    let image = DynamicImage::ImageRgba8(image);
-
-    Ok(image)
+    Ok(filter)
 }
 
 fn decode_single_frame(
@@ -115,4 +115,19 @@ fn decode_single_frame(
     out.frame(&mut output_frame)?;
 
     Ok(())
+}
+
+fn convert_frame_to_image(
+    decoder: &VideoDecoder,
+    output_frame: Video,
+) -> ThumbResult<DynamicImage> {
+    let image = RgbaImage::from_raw(
+        decoder.width(),
+        decoder.height(),
+        output_frame.data(0).to_vec(),
+    )
+    .ok_or_else(|| ThumbError::NullVideo)?;
+    let image = DynamicImage::ImageRgba8(image);
+
+    Ok(image)
 }
