@@ -2,7 +2,6 @@ use image::ImageError;
 use mime::Mime;
 use std::fmt::{Debug, Display, Formatter};
 use std::io;
-use vid2img::{CaptureError, StreamError};
 
 pub type ThumbResult<T> = Result<T, ThumbError>;
 
@@ -18,9 +17,7 @@ pub enum ThumbError {
 
     NullVideo,
 
-    CaptureError(vid2img::CaptureError),
-
-    StreamError(vid2img::StreamError),
+    FFMPEG(ffmpeg_next::Error),
 }
 
 impl Display for ThumbError {
@@ -31,12 +28,7 @@ impl Display for ThumbError {
             ThumbError::Decode => write!(f, "failed to decode image"),
             ThumbError::Unsupported(mime) => write!(f, "Unsupported media type {}", mime),
             ThumbError::NullVideo => write!(f, "no video data found in file"),
-            ThumbError::CaptureError(c) => {
-                write!(f, "capture error when creating video thumbnail: {:?}", c)
-            }
-            ThumbError::StreamError(s) => {
-                write!(f, "stream error when creating video thumbnail: {:?}", s)
-            }
+            ThumbError::FFMPEG(e) => write!(f, "ffmpeg error: {}", e),
         }
     }
 }
@@ -46,6 +38,7 @@ impl std::error::Error for ThumbError {
         match self {
             ThumbError::IO(e) => e.source(),
             ThumbError::Image(i) => i.source(),
+            ThumbError::FFMPEG(e) => e.source(),
             _ => None,
         }
     }
@@ -63,14 +56,8 @@ impl From<image::error::ImageError> for ThumbError {
     }
 }
 
-impl From<vid2img::CaptureError> for ThumbError {
-    fn from(e: CaptureError) -> Self {
-        Self::CaptureError(e)
-    }
-}
-
-impl From<vid2img::StreamError> for ThumbError {
-    fn from(s: StreamError) -> Self {
-        Self::StreamError(s)
+impl From<ffmpeg_next::Error> for ThumbError {
+    fn from(e: ffmpeg_next::Error) -> Self {
+        Self::FFMPEG(e)
     }
 }
