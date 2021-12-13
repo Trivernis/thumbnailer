@@ -79,7 +79,7 @@ fn resize_images(image: DynamicImage, sizes: &[ThumbnailSize]) -> Vec<DynamicIma
         .into_par_iter()
         .map(|size| {
             let (width, height) = size.dimensions();
-            image.resize(width, height, FilterType::Nearest)
+            image.resize(width, height, FilterType::Lanczos3)
         })
         .collect()
 }
