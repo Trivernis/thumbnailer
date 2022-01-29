@@ -22,7 +22,7 @@
 use crate::error::ThumbResult;
 use image;
 use image::imageops::FilterType;
-use image::{DynamicImage, ImageOutputFormat};
+use image::{DynamicImage, GenericImageView, ImageOutputFormat};
 use mime::Mime;
 use rayon::prelude::*;
 use std::io::{BufRead, Seek, Write};
@@ -54,6 +54,11 @@ impl Thumbnail {
         image.write_to(writer, ImageOutputFormat::Jpeg(compression))?;
 
         Ok(())
+    }
+
+    /// Returns the size of the thumbnail as width,  height
+    pub fn size(&self) -> (u32, u32) {
+        self.inner.dimensions()
     }
 }
 
