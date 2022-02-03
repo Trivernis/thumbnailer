@@ -7,6 +7,7 @@
 //! use thumbnailer::{create_thumbnails, Thumbnail, ThumbnailSize};
 //! use std::fs::File;
 //! use std::io::BufReader;
+//! use std::io::Cursor;
 //!
 //! fn main() {
 //!     let file = File::open("tests/assets/test.png").unwrap();
@@ -14,7 +15,7 @@
 //!     let mut  thumbnails = create_thumbnails(reader, mime::IMAGE_PNG, [ThumbnailSize::Small, ThumbnailSize::Medium]).unwrap();
 //!     
 //!     let thumbnail = thumbnails.pop().unwrap();
-//!     let mut buf = Vec::new();
+//!     let mut buf = Cursor::new(Vec::new());
 //!     thumbnail.write_png(&mut buf).unwrap();
 //! }
 //! ```
@@ -41,7 +42,7 @@ pub struct Thumbnail {
 
 impl Thumbnail {
     /// Writes the bytes of the image in a png format
-    pub fn write_png<W: Write>(self, writer: &mut W) -> ThumbResult<()> {
+    pub fn write_png<W: Write + Seek>(self, writer: &mut W) -> ThumbResult<()> {
         let image = DynamicImage::ImageRgba8(self.inner.into_rgba8());
         image.write_to(writer, ImageOutputFormat::Png)?;
 
@@ -49,7 +50,7 @@ impl Thumbnail {
     }
 
     /// Writes the bytes of the image in a jpeg format
-    pub fn write_jpeg<W: Write>(self, writer: &mut W, compression: u8) -> ThumbResult<()> {
+    pub fn write_jpeg<W: Write + Seek>(self, writer: &mut W, compression: u8) -> ThumbResult<()> {
         let image = DynamicImage::ImageRgb8(self.inner.into_rgb8());
         image.write_to(writer, ImageOutputFormat::Jpeg(compression))?;
 

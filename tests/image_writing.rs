@@ -71,11 +71,11 @@ fn write_thumbnail(
     .pop()
     .unwrap();
 
-    let mut buf = Vec::new();
+    let mut buf = Cursor::new(Vec::new());
     match target_format {
         TargetFormat::Png => thumb.write_png(&mut buf)?,
         TargetFormat::Jpeg => thumb.write_jpeg(&mut buf, 8)?,
     }
 
-    Ok(buf)
+    Ok(buf.into_inner())
 }
