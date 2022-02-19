@@ -34,6 +34,7 @@ pub use size::ThumbnailSize;
 pub mod error;
 mod formats;
 mod size;
+pub(crate) mod utils;
 
 #[derive(Clone, Debug)]
 pub struct Thumbnail {

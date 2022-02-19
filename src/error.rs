@@ -17,8 +17,7 @@ pub enum ThumbError {
 
     NullVideo,
 
-    #[cfg(feature = "ffmpeg")]
-    FFMPEG(ffmpeg_next::Error),
+    FFMPEG(String),
 }
 
 impl Display for ThumbError {
@@ -29,8 +28,6 @@ impl Display for ThumbError {
             ThumbError::Decode => write!(f, "failed to decode image"),
             ThumbError::Unsupported(mime) => write!(f, "Unsupported media type {}", mime),
             ThumbError::NullVideo => write!(f, "no video data found in file"),
-
-            #[cfg(feature = "ffmpeg")]
             ThumbError::FFMPEG(e) => write!(f, "ffmpeg error: {}", e),
         }
     }
@@ -41,10 +38,6 @@ impl std::error::Error for ThumbError {
         match self {
             ThumbError::IO(e) => e.source(),
             ThumbError::Image(i) => i.source(),
-
-            #[cfg(feature = "ffmpeg")]
-            ThumbError::FFMPEG(e) => e.source(),
-
             _ => None,
         }
     }
@@ -59,12 +52,5 @@ impl From<io::Error> for ThumbError {
 impl From<image::error::ImageError> for ThumbError {
     fn from(e: ImageError) -> Self {
         Self::Image(e)
-    }
-}
-
-#[cfg(feature = "ffmpeg")]
-impl From<ffmpeg_next::Error> for ThumbError {
-    fn from(e: ffmpeg_next::Error) -> Self {
-        Self::FFMPEG(e)
     }
 }
