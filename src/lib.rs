@@ -51,9 +51,9 @@ impl Thumbnail {
     }
 
     /// Writes the bytes of the image in a jpeg format
-    pub fn write_jpeg<W: Write + Seek>(self, writer: &mut W, compression: u8) -> ThumbResult<()> {
+    pub fn write_jpeg<W: Write + Seek>(self, writer: &mut W, quality: u8) -> ThumbResult<()> {
         let image = DynamicImage::ImageRgb8(self.inner.into_rgb8());
-        image.write_to(writer, ImageOutputFormat::Jpeg(compression))?;
+        image.write_to(writer, ImageOutputFormat::Jpeg(quality))?;
 
         Ok(())
     }
