@@ -15,7 +15,6 @@ pub fn get_video_frame<R: BufRead + Seek>(mut reader: R, mime: Mime) -> ThumbRes
     }
 
     let tempdir = tempfile::tempdir()?;
-    tempdir.path();
     let path = PathBuf::from(tempdir.path())
         .join("video")
         .with_extension(mime.subtype().as_str());
